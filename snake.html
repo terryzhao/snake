@@ -1,0 +1,406 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"> 
+        <script type="text/javascript" src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+        <style type="text/css">        
+            #snake
+            {
+                width:600px;
+                height:600px;
+                border:1px solid black;
+                margin:0 auto;
+                position: relative;
+
+            }
+
+            .node
+            {
+                width:10px;
+                height:10px;
+                border:1px solid black;
+                background-color: black;
+                position: absolute;
+
+            }
+
+            .food
+            {
+                width:10px;
+                height:10px;
+                border:1px solid red;
+                background-color: red;
+                position: absolute;
+
+            }
+
+        </style>
+        <title></title>
+    </head>
+    <body>
+        <div id="snake">
+
+        </div>
+        <script type="text/javascript">
+
+            $(document).ready(function() 
+                    {
+                    // Stuff to do as soon as the DOM is ready;
+
+                    var snake = initSnake();
+
+                    createFood();
+
+                    var timer = setInterval(function(){move(snake)},100);
+                    $(document).keydown(function(event){
+
+                        var op = "";
+                        switch(event.which)
+                        {
+                        case 37: op="left"; break;
+                        case 38: op="up"; break;
+                        case 39: op="right"; break;
+                        case 40: op="down"; break;
+                        }
+
+                        if (op!="")
+                        {
+                        snake.addOperate(op);        
+                        }
+                        });
+                    });
+
+function createFood()
+{
+    $(".food").remove();
+    var row = 0;
+    var col = 0;
+    do
+    {
+        row = Math.floor(Math.random()*60);
+        col = Math.floor(Math.random()*60);
+
+    }while($(".J_"+row+"_"+col).length!=0)
+
+    var food = new Node(row,col);
+    drawNode(food,"food");
+}
+
+
+function move(snake)
+{
+
+    if(snake.getStatus()=="dead")
+    {
+        return;
+    }
+
+    while(snake.getOperate().length!=0)
+    {
+        var op = snake.getOperate().shift();
+        if(op!=snake.getDirection())
+        {
+            var direction = snake.getDirection();
+            if(direction == "up" && op== "down")
+            {
+                continue;
+            }
+            if(direction == "down" && op== "up")
+            {
+                continue;
+            }
+            if(direction == "left" && op== "right")
+            {
+                continue;
+            }
+            if(direction == "right" && op== "left")
+            {
+                continue;
+            }
+            snake.setDirection(op);
+            break;
+        }
+    }
+
+    var row = 0;
+    var col = 0;
+    switch(snake.getDirection())
+    {
+        case "up":
+            row--;
+            break;
+        case "down":
+            row++;
+            break;
+        case "left":
+            col--;
+            break;
+        case "right":
+            col++;
+            break;
+    }
+
+    var head = snake.getHead();
+    if((head.getRow()+row) == $(".food").attr("row") && (head.getCol()+col) == $(".food").attr("col"))
+    {
+        var node = new Node(head.getRow()+row,head.getCol()+col);
+        snake.eat(node);
+        createFood();
+    }
+    else
+    {
+        var node = snake.getEnd();
+        do
+        {
+            if(node.getPrevNode()==null)
+            {
+                break;
+            }
+            node.setRow(node.getPrevNode().getRow());
+            node.setCol(node.getPrevNode().getCol());
+            node  = node.getPrevNode();
+
+        }while(node != null)
+
+
+
+        head.setRow(head.getRow()+row);
+        head.setCol(head.getCol()+col);
+
+    }
+
+
+    //判断是否死了
+    var headRow = head.getRow();
+    var headCol = head.getCol();
+
+    if(headRow>59||headRow<0||headCol>59||headCol<0)
+    {
+        snake.setStatus("dead");
+        return;
+    }
+
+    var tempNode = snake.getHead().getNextNode().getNextNode();
+    do
+    {
+        if(tempNode.getRow()==headRow&&tempNode.getCol()==headCol)
+        {
+            snake.setStatus("dead");
+            return;
+        }
+        tempNode = tempNode.getNextNode();
+
+    }while(tempNode!=null)
+
+
+    drawSnake(snake);
+}
+
+function Snake()
+{
+    var direction = "down";
+    var operate = new Array();
+    var head = null;
+    var end = null;
+    var status = "live";
+
+    this.getStatus = function()
+    {
+        return status;
+    }
+
+    this.setStatus = function(state)
+    {
+        status = state;
+    }
+
+    this.getEnd = function()
+    {
+        return end;
+    }
+
+    this.setEnd = function(node)
+    {
+        end = node;
+    } 
+
+    this.setOperate = function(ops)
+    {
+        operate = ops;
+    }
+
+    this.getOperate = function()
+    {
+        return operate;
+    }
+
+    this.setDirection = function(dir)
+    {
+        direction = dir;
+    }
+
+    this.getDirection = function()
+    {
+        return direction;
+    }
+
+
+    this.addOperate = function(op)
+    {
+        operate.push(op);
+    }
+
+
+    this.addNode = function(node)
+    {
+        if(head == null)
+        {
+            head = node;
+        }
+        else
+        {
+            node.setPrevNode(end);
+            end.setNextNode(node);
+        }
+        end = node;
+    }
+
+    this.length = function()
+    {
+        var size = 1;
+        var node = head.getNextNode();
+        while(node!=null)
+        {
+            size++;
+            node = node.getNextNode();
+        }
+
+        return size;
+    }
+
+    this.getHead = function()
+    {
+        return head;
+    }
+
+    this.eat = function(newHead)
+    {
+        newHead.setNextNode(head);
+        head.setPrevNode(newHead);
+        head = newHead;
+        var a = 0; 
+    }
+
+
+}
+
+function Node(rowNum,colNum)
+{
+    var row = rowNum;
+    var col = colNum;
+
+    var prevNode = null;
+    var nextNode = null;
+
+    this.getNextNode = function()
+    {
+        return nextNode;
+    }
+
+    this.getPrevNode = function()
+    {
+        return prevNode;
+    }
+
+    this.setNextNode = function(node)
+    {
+        nextNode = node;
+    }
+
+    this.setPrevNode = function(node)
+    {
+        prevNode = node;
+    }
+
+    this.getRow = function()
+    {
+        return row;
+    }
+
+    this.setRow = function(rowNum)
+    {
+        row = rowNum;
+    }
+
+    this.getCol = function()
+    {
+        return col;
+    }
+
+    this.setCol = function(colNum)
+    {
+        col = colNum;
+    }
+
+
+
+
+    this.isHead = function()
+    {
+        return prevNode == null ? true:false;
+    }
+
+    this.isEnd = function()
+    {
+        return nextNode == null ? true:false;
+    }
+}
+
+function initSnake()
+{
+
+    //snake对象（链表）
+    var snake = new Snake();
+
+    for(var i = 5 ; i >=0 ; i--)
+    {
+        var node = new Node(i,0);
+        snake.addNode(node);
+    }
+
+    drawSnake(snake);
+
+    return snake;
+}
+
+function drawSnake(snake)
+{
+    $(".node").remove();
+    var node = snake.getHead();
+    do
+    {
+        drawNode(node,"node");
+        node = node.getNextNode();
+        var a=0;
+
+    }while(node!=null)
+}
+
+function drawNode(node,type)
+{
+    var temp = $(document.createElement("div"));
+    temp.addClass(type);
+    temp.css("top",node.getRow()*10);
+    temp.css("left",node.getCol()*10);
+    if(type=="food")
+    {
+        temp.attr("row",node.getRow());
+        temp.attr("col",node.getCol());
+    }
+    $("#snake").append(temp);
+}
+
+
+        </script>
+    </body>
+</html>
